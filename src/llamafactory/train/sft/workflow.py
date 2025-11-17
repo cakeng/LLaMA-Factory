@@ -25,6 +25,7 @@ from ...extras.ploting import plot_loss
 from ...model import load_model, load_tokenizer
 from ..trainer_utils import create_modelcard_and_push
 from .metric import ComputeAccuracy, ComputeSimilarity, eval_logit_processor
+from ..moe import BlockFFNSeq2SeqTrainer
 from .trainer import CustomSeq2SeqTrainer
 
 
@@ -45,6 +46,10 @@ def run_sft(
     generating_args: "GeneratingArguments",
     callbacks: Optional[list["TrainerCallback"]] = None,
 ):
+    if finetuning_args.use_blockffn_loss and not model_args.moe_output_router_logits:
+        logger.info_rank0("Enabling `moe_output_router_logits` to support BlockFFN auxiliary losses.")
+        model_args.moe_output_router_logits = True
+
     tokenizer_module = load_tokenizer(model_args)
     tokenizer = tokenizer_module["tokenizer"]
     template = get_template_and_fix_tokenizer(tokenizer, data_args)
@@ -79,7 +84,8 @@ def run_sft(
     gen_kwargs["pad_token_id"] = tokenizer.pad_token_id
 
     # Initialize our Trainer
-    trainer = CustomSeq2SeqTrainer(
+    trainer_cls = BlockFFNSeq2SeqTrainer if finetuning_args.use_blockffn_loss else CustomSeq2SeqTrainer
+    trainer = trainer_cls(
         model=model,
         args=training_args,
         finetuning_args=finetuning_args,

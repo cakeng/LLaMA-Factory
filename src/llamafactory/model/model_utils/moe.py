@@ -127,32 +127,39 @@ def add_z3_leaf_module(model: "PreTrainedModel") -> None:
 
 
 def configure_moe(config: "PretrainedConfig", model_args: "ModelArguments", is_trainable: bool) -> None:
-    if not is_trainable or not model_args.moe_aux_loss_coef:
+    enable_router_outputs = bool(model_args.moe_aux_loss_coef) or model_args.moe_output_router_logits
+    apply_aux_loss = is_trainable and model_args.moe_aux_loss_coef is not None
+
+    if not enable_router_outputs and not apply_aux_loss:
         return
 
     model_type = getattr(config, "model_type", None)
     text_config = getattr(config, "text_config", None)  # for multimodal model
 
-    if model_type in [
-        "dbrx",
-        "ernie4_5_moe",
-        "granitemoe",
-        "jamba",
-        "jetmoe",
-        "llama4",
-        "mixtral",
-        "olmoe",
-        "phimoe",
-        "qwen2_moe",
-        "qwen3_moe",
-    ]:
-        setattr(config, "output_router_logits", True)
+    if enable_router_outputs:
+        if model_type in [
+            "dbrx",
+            "ernie4_5_moe",
+            "granitemoe",
+            "jamba",
+            "jetmoe",
+            "llama4",
+            "mixtral",
+            "olmoe",
+            "phimoe",
+            "qwen2_moe",
+            "qwen3_moe",
+        ]:
+            setattr(config, "output_router_logits", True)
 
-    if text_config and getattr(text_config, "model_type", None) in [
-        "glm4v_moe_text",  # glmv4_5
-        "qwen3_moe",  # internvl_3_5
-    ]:
-        setattr(text_config, "output_router_logits", True)
+        if text_config and getattr(text_config, "model_type", None) in [
+            "glm4v_moe_text",  # glmv4_5
+            "qwen3_moe",  # internvl_3_5
+        ]:
+            setattr(text_config, "output_router_logits", True)
+
+    if not apply_aux_loss:
+        return
 
     if model_type in [
         "ernie4_5_moe",

@@ -1,0 +1,50 @@
+### model
+model_name_or_path: openai/gpt-oss-20b
+trust_remote_code: true
+moe_output_router_logits: true
+
+### method
+stage: sft
+do_train: true
+finetuning_type: lora
+lora_rank: 8
+lora_target: all
+
+### dataset
+dataset: identity,alpaca_en_demo
+template: gpt
+cutoff_len: 2048
+max_samples: 1000
+overwrite_cache: true
+preprocessing_num_workers: 16
+dataloader_num_workers: 4
+
+### blockffn
+use_blockffn_loss: true
+blockffn_chunk_len: 8
+blockffn_locality_weight: 0.05
+blockffn_chunk_weight: 0.1
+blockffn_sigmoid_alpha: 12.0
+blockffn_prob_temperature: 1.0
+blockffn_min_prob_eps: 1.0e-6
+blockffn_log_interval: 20
+
+### output
+output_dir: saves/gpt-oss-20b/blockffn-lora
+logging_steps: 10
+save_steps: 500
+plot_loss: true
+overwrite_output_dir: true
+report_to: none  # choices: [none, wandb, tensorboard, swanlab, mlflow]
+
+### train
+per_device_train_batch_size: 1
+gradient_accumulation_steps: 8
+learning_rate: 1.0e-4
+num_train_epochs: 3.0
+lr_scheduler_type: cosine
+warmup_ratio: 0.1
+bf16: true
+ddp_timeout: 180000000
+resume_from_checkpoint: null
+

@@ -21,8 +21,10 @@ from typing import TYPE_CHECKING, Optional
 from transformers import DataCollatorForLanguageModeling
 
 from ...data import get_dataset, get_template_and_fix_tokenizer
+from ...extras.logging import get_logger
 from ...extras.ploting import plot_loss
 from ...model import load_model, load_tokenizer
+from ..moe import BlockFFNTrainer
 from ..trainer_utils import create_modelcard_and_push
 from .trainer import CustomTrainer
 
@@ -33,6 +35,9 @@ if TYPE_CHECKING:
     from ...hparams import DataArguments, FinetuningArguments, ModelArguments
 
 
+logger = get_logger(__name__)
+
+
 def run_pt(
     model_args: "ModelArguments",
     data_args: "DataArguments",
@@ -40,6 +45,9 @@ def run_pt(
     finetuning_args: "FinetuningArguments",
     callbacks: Optional[list["TrainerCallback"]] = None,
 ):
+    if finetuning_args.use_blockffn_loss and not model_args.moe_output_router_logits:
+        logger.info_rank0("Enabling `moe_output_router_logits` to support BlockFFN auxiliary losses.")
+        model_args.moe_output_router_logits = True
     tokenizer_module = load_tokenizer(model_args)
     tokenizer = tokenizer_module["tokenizer"]
     template = get_template_and_fix_tokenizer(tokenizer, data_args)
@@ -48,7 +56,8 @@ def run_pt(
     data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=False)
 
     # Initialize our Trainer
-    trainer = CustomTrainer(
+    trainer_cls = BlockFFNTrainer if finetuning_args.use_blockffn_loss else CustomTrainer
+    trainer = trainer_cls(
         model=model,
         args=training_args,
         finetuning_args=finetuning_args,

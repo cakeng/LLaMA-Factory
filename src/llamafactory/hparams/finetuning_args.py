@@ -441,8 +441,72 @@ class SwanLabArguments:
 
 
 @dataclass
+class BlockFFNArguments:
+    use_blockffn_loss: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "Enable BlockFFN-inspired auxiliary sparsity objectives. "
+                "Requires router activations (logits or probabilities) from the model."
+            )
+        },
+    )
+    blockffn_chunk_len: int = field(
+        default=8,
+        metadata={"help": "Number of consecutive tokens considered when computing chunk-level sparsity."},
+    )
+    blockffn_locality_weight: float = field(
+        default=0.0,
+        metadata={"help": "Loss weight for the activation locality objective."},
+    )
+    blockffn_chunk_weight: float = field(
+        default=0.0,
+        metadata={"help": "Loss weight for the chunk-level sparsification objective."},
+    )
+    blockffn_sigmoid_alpha: float = field(
+        default=10.0,
+        metadata={
+            "help": (
+                "Sharpness of the pseudo-binary mask applied to router activations when computing locality loss."
+            )
+        },
+    )
+    blockffn_prob_temperature: float = field(
+        default=1.0,
+        metadata={
+            "help": (
+                "Temperature applied before normalizing router logits to probabilities. "
+                "Use values > 1 to soften or < 1 to sharpen the distribution."
+            )
+        },
+    )
+    blockffn_min_prob_eps: float = field(
+        default=1e-6,
+        metadata={"help": "Minimum probability for numerical stability when combining router activations."},
+    )
+    blockffn_router_keys: Optional[str] = field(
+        default=None,
+        metadata={
+            "help": (
+                "Comma-separated list of keys to look for router activations in the model outputs. "
+                "Defaults to a built-in set when unspecified."
+            )
+        },
+    )
+    blockffn_log_interval: int = field(
+        default=100,
+        metadata={"help": "Logging interval (in training steps) for BlockFFN-specific diagnostics."},
+    )
+    blockffn_log_stats: bool = field(
+        default=True,
+        metadata={"help": "Whether to emit TLS/CLS statistics for BlockFFN objectives during training."},
+    )
+
+
+@dataclass
 class FinetuningArguments(
     SwanLabArguments,
+    BlockFFNArguments,
     BAdamArgument,
     ApolloArguments,
     GaloreArguments,
@@ -537,6 +601,8 @@ class FinetuningArguments(
         self.additional_target: Optional[list[str]] = split_arg(self.additional_target)
         self.galore_target: list[str] = split_arg(self.galore_target)
         self.apollo_target: list[str] = split_arg(self.apollo_target)
+        router_keys = split_arg(self.blockffn_router_keys)
+        self.blockffn_router_keys = [key for key in router_keys if key] if router_keys is not None else None
         self.use_ref_model = self.stage == "dpo" and self.pref_loss not in ["orpo", "simpo"]
 
         assert self.finetuning_type in ["lora", "oft", "freeze", "full"], "Invalid fine-tuning method."
@@ -579,6 +645,21 @@ class FinetuningArguments(
 
             if self.pissa_init:
                 raise ValueError("`pissa_init` is only valid for LoRA training.")
+
+        if self.use_blockffn_loss:
+            if self.blockffn_chunk_len < 1:
+                raise ValueError("`blockffn_chunk_len` must be >= 1 when BlockFFN loss is enabled.")
+            if self.blockffn_locality_weight <= 0.0 and self.blockffn_chunk_weight <= 0.0:
+                raise ValueError(
+                    "At least one of `blockffn_locality_weight` or `blockffn_chunk_weight` must be positive when "
+                    "BlockFFN loss is enabled."
+                )
+            if self.blockffn_prob_temperature <= 0.0:
+                raise ValueError("`blockffn_prob_temperature` must be positive.")
+            if self.blockffn_min_prob_eps <= 0.0:
+                raise ValueError("`blockffn_min_prob_eps` must be positive.")
+            if self.blockffn_log_interval < 1:
+                raise ValueError("`blockffn_log_interval` must be >= 1.")
 
     def to_dict(self) -> dict[str, Any]:
         args = asdict(self)

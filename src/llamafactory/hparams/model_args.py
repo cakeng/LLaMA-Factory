@@ -142,6 +142,15 @@ class BaseModelArguments:
         default=None,
         metadata={"help": "Coefficient of the auxiliary router loss in mixture-of-experts model."},
     )
+    moe_output_router_logits: bool = field(
+        default=False,
+        metadata={
+            "help": (
+                "Whether to force MoE models to output router logits / probabilities during forward passes. "
+                "Enable when external sparsity objectives require router activations even without aux loss."
+            )
+        },
+    )
     disable_gradient_checkpointing: bool = field(
         default=False,
         metadata={"help": "Whether or not to disable gradient checkpointing."},
