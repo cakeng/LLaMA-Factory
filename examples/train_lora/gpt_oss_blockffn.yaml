@@ -2,22 +2,27 @@
 model_name_or_path: openai/gpt-oss-20b
 trust_remote_code: true
 moe_output_router_logits: true
+hf_hub_token: null  # Set to your HF token or use 'huggingface-cli login'
 
 ### method
-stage: sft
+stage: pt  # Pre-training for plain text (no user/assistant pairs needed)
 do_train: true
 finetuning_type: lora
 lora_rank: 8
 lora_target: all
 
 ### dataset
-dataset: identity,alpaca_en_demo
-template: gpt
+dataset: dolmino_wiki  # Using wiki - math subset has schema issues  
+template: default  # For PT stage, template is less critical  # Use default template for pre-training
 cutoff_len: 2048
-max_samples: 1000
+# max_samples: 50000  # Adjust based on your needs
 overwrite_cache: true
-preprocessing_num_workers: 16
-dataloader_num_workers: 4
+# preprocessing_num_workers: 1  # Must be disabled for streaming mode
+dataloader_num_workers: 2
+data_shared_file_system: true  # Ensures proper dataset caching across GPUs
+streaming: true  # Required for math subset due to mixed schemas
+buffer_size: 10000  # Buffer for streaming dataset
+max_steps: 67500
 
 ### blockffn
 use_blockffn_loss: true
@@ -30,7 +35,7 @@ blockffn_min_prob_eps: 1.0e-6
 blockffn_log_interval: 20
 
 ### output
-output_dir: saves/gpt-oss-20b/blockffn-lora
+output_dir: saves/gpt-oss-20b/blockffn-lora_dolmino_wiki
 logging_steps: 10
 save_steps: 500
 plot_loss: true

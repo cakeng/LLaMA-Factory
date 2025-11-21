@@ -730,5 +730,61 @@
       "prompt": "content"
     },
     "folder": "python"
+  },
+  "dolmino_mix_default": {
+    "hf_hub_url": "allenai/dolmino-mix-1124",
+    "subset": "default",
+    "split": "train",
+    "columns": {
+      "prompt": "text"
+    }
+  },
+  "dolmino_dclm": {
+    "hf_hub_url": "allenai/dolmino-mix-1124",
+    "subset": "dclm",
+    "split": "train",
+    "columns": {
+      "prompt": "text"
+    }
+  },
+  "dolmino_flan": {
+    "hf_hub_url": "allenai/dolmino-mix-1124",
+    "subset": "flan",
+    "split": "train",
+    "columns": {
+      "prompt": "text"
+    }
+  },
+  "dolmino_math": {
+    "hf_hub_url": "allenai/dolmino-mix-1124",
+    "subset": "math",
+    "split": "train",
+    "columns": {
+      "prompt": "text"
+    }
+  },
+  "dolmino_pes2o": {
+    "hf_hub_url": "allenai/dolmino-mix-1124",
+    "subset": "pes2o",
+    "split": "train",
+    "columns": {
+      "prompt": "text"
+    }
+  },
+  "dolmino_stackexchange": {
+    "hf_hub_url": "allenai/dolmino-mix-1124",
+    "subset": "stackexchange",
+    "split": "train",
+    "columns": {
+      "prompt": "text"
+    }
+  },
+  "dolmino_wiki": {
+    "hf_hub_url": "allenai/dolmino-mix-1124",
+    "subset": "wiki",
+    "split": "train",
+    "columns": {
+      "prompt": "text"
+    }
   }
 }

@@ -31,7 +31,7 @@ while [[ $# -gt 0 ]]; do
     *)
       break
       ;;
-  end
+  esac
 done
 
 if [[ -n "$GPU_MEM" ]]; then
@@ -50,6 +50,28 @@ fi
 if [[ -n "$GPUS" ]]; then
   export CUDA_VISIBLE_DEVICES="$GPUS"
 fi
+
+# Set HuggingFace token if available (to avoid rate limits)
+if [[ -n "${HF_TOKEN:-}" ]]; then
+  export HUGGING_FACE_HUB_TOKEN="$HF_TOKEN"
+  echo "Using HuggingFace token for authentication"
+fi
+
+# Pre-download dataset to avoid rate limits during multi-GPU training
+echo "Pre-downloading dataset to avoid rate limits..."
+python3 -c "
+from datasets import load_dataset
+import sys
+try:
+    print('Downloading dolmino_wiki subset (this may take a while)...')
+    # Use streaming=False to actually download and cache the data
+    # Take a small sample to trigger the download without loading everything
+    ds = load_dataset('allenai/dolmino-mix-1124', 'wiki', split='train', streaming=False)
+    print(f'Dataset downloaded successfully! Total samples: {len(ds)}')
+except Exception as e:
+    print(f'Warning: Could not pre-download dataset: {e}', file=sys.stderr)
+    print('Training will download during execution...', file=sys.stderr)
+" || echo "Pre-download failed, continuing anyway..."
 
 exec llamafactory-cli train examples/train_lora/gpt_oss_blockffn.yaml
 
