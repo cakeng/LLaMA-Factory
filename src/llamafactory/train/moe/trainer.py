@@ -143,7 +143,7 @@ class BlockFFNSeq2SeqTrainer(_BlockFFNMixIn, CustomSeq2SeqTrainer):
         return_outputs: bool = False,
         **kwargs,
     ):
-        blockffn_active = self._blockffn_enabled() and self.training and "labels" in inputs
+        blockffn_active = self._blockffn_enabled() and self.model.training and "labels" in inputs
         labels_clone = inputs["labels"].clone() if blockffn_active else None
 
         need_outputs = return_outputs or blockffn_active
@@ -178,7 +178,7 @@ class BlockFFNTrainer(_BlockFFNMixIn, CustomTrainer):
         return_outputs: bool = False,
         **kwargs,
     ):
-        blockffn_active = self._blockffn_enabled() and self.training and "labels" in inputs
+        blockffn_active = self._blockffn_enabled() and self.model.training and "labels" in inputs
         labels_clone = inputs["labels"].clone() if blockffn_active else None
 
         need_outputs = return_outputs or blockffn_active

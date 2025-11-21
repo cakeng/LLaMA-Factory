@@ -31,9 +31,9 @@ from .callbacks import LogCallback, PissaConvertCallback, ReporterCallback
 from .dpo import run_dpo
 from .kto import run_kto
 from .ppo import run_ppo
-from .pt import run_pt
+from .pt.workflow import run_pt
 from .rm import run_rm
-from .sft import run_sft
+from .sft.workflow import run_sft
 from .trainer_utils import get_ray_trainer, get_swanlab_callback
 
 
